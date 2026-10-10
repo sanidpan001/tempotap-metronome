@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TempoTap — Free Online Metronome with Tap Tempo &amp; Subdivisions</title>
+<meta name="description" content="TempoTap is a free online metronome with tap tempo, 20–240 BPM, accented downbeats, time signatures from 2/4 to 12/8, beat subdivisions and a visual pulse ring. No signup — just press play and practise in perfect time.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --walnut-950:#1c110a; --walnut-900:#26180f; --walnut-800:#33221652;
+    --walnut-panel:#2e1d11; --walnut-edge:#4a2f1a;
+    --brass:#c9973f; --brass-bright:#e8bc5e; --brass-deep:#9a7126;
+    --cream:#f4e9d4;
+  }
+  html{scroll-behavior:smooth}
+  body{background:
+      radial-gradient(1100px 500px at 50% -10%, rgba(201,151,63,.14), transparent 60%),
+      repeating-linear-gradient(93deg, #211409 0 140px, #1e1208 140px 280px),
+      #1c110a;
+    color:#f4e9d4; font-family:'Inter',system-ui,sans-serif;}
+  .font-display{font-family:'Fraunces',Georgia,serif}
+  .brass-text{background:linear-gradient(160deg,#f0cd7d,#c9973f 55%,#a87c2c);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stand-panel{
+    background:linear-gradient(168deg,#3a2513 0%,#2c1a0d 55%,#241407 100%);
+    border:1px solid #55371d;
+    box-shadow:0 30px 60px -18px rgba(0,0,0,.75), inset 0 1px 0 rgba(232,188,94,.25), inset 0 -14px 30px rgba(0,0,0,.35);
+  }
+  .stand-lip{
+    background:linear-gradient(180deg,#6b4423,#4a2c13);
+    box-shadow:0 10px 22px rgba(0,0,0,.55), inset 0 1px 0 rgba(240,205,125,.5);
+  }
+  .screw{width:11px;height:11px;border-radius:9999px;background:radial-gradient(circle at 35% 30%,#f0cd7d,#9a7126 70%);box-shadow:inset 0 -1px 2px rgba(0,0,0,.6);position:relative}
+  .screw::after{content:"";position:absolute;left:1px;right:1px;top:50%;height:1.5px;background:rgba(40,22,4,.75);transform:rotate(38deg)}
+  .pulse-ring{transform-origin:center;transition:none}
+  .pulse-ring.flash{animation:ringflash .28s ease-out}
+  @keyframes ringflash{0%{opacity:1;stroke-width:10}100%{opacity:.25;stroke-width:3}}
+  .orb{transition:transform .07s ease, background .07s ease, box-shadow .07s ease}
+  .orb.hit{transform:scale(1.13)}
+  .orb.accent{background:radial-gradient(circle at 38% 32%,#ffe9ae,#e8bc5e 55%,#b3812c)!important;box-shadow:0 0 46px 8px rgba(232,188,94,.55)!important}
+  .orb.plain{background:radial-gradient(circle at 38% 32%,#d9c294,#a9834f 60%,#77572a);box-shadow:0 0 22px 2px rgba(201,151,63,.35)}
+  .beat-dot{transition:all .08s ease}
+  .beat-dot.on{background:#e8bc5e;box-shadow:0 0 12px rgba(232,188,94,.8);transform:scale(1.25)}
+  .beat-dot.on-accent{background:#fff0c2;box-shadow:0 0 16px rgba(255,240,194,.95);transform:scale(1.45)}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:8px;border-radius:9999px;background:linear-gradient(90deg,var(--brass) var(--fill,40%),#17100a5c var(--fill,40%));background-color:#17100a;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:9999px;background:radial-gradient(circle at 35% 30%,#f6dc96,#c9973f 65%,#8a631f);border:2px solid #5f4212;box-shadow:0 3px 8px rgba(0,0,0,.6);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:9999px;background:radial-gradient(circle at 35% 30%,#f6dc96,#c9973f 65%,#8a631f);border:2px solid #5f4212;cursor:pointer}
+  .chip{transition:all .15s ease}
+  .chip:hover{border-color:#c9973f;color:#f0cd7d}
+  .chip.sel{background:linear-gradient(160deg,#e8bc5e,#b3812c);color:#2a1a08;border-color:#e8bc5e;font-weight:700}
+  .sig-btn.sel,.sub-btn.sel{background:linear-gradient(160deg,#e8bc5e,#b3812c);color:#2a1a08;border-color:#e8bc5e}
+  .sig-btn.sel .sig-sub,.sub-btn.sel .sub-sub{color:#4a2f10}
+  .tap-btn:active{transform:scale(.965)}
+  .play-btn{transition:all .15s ease}
+  .play-btn.playing{background:linear-gradient(160deg,#8a3b2e,#6d2a20);border-color:#c96a55;color:#ffe3d9}
+  details.faq{background:#2a1a0e;border:1px solid #4a2f1a}
+  details.faq summary{cursor:pointer;list-style:none}
+  details.faq summary::-webkit-details-marker{display:none}
+  details.faq[open ] summary .chev{transform:rotate(45deg)}
+  .chev{transition:transform .2s ease}
+  .article-body p{margin-bottom:1.05rem;line-height:1.75;color:#e6d7ba}
+  .article-body h2{font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:1.55rem;color:#f0cd7d;margin:2rem 0 .8rem}
+  .article-body h3{font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:1.2rem;color:#ecd9ac;margin:1.5rem 0 .6rem}
+  .article-body ul{list-style:disc;padding-left:1.4rem;margin-bottom:1.05rem;color:#e6d7ba;line-height:1.7}
+  .article-body strong{color:#f4e9d4}
+  @media (max-width:400px){ .bpm-big{font-size:4.6rem} }
+</style>
+<script id="lib-tempotap">
+/* TempoTap — pure metronome logic (no DOM). Shared by the page and the tests. */
+var TempoTapLib = (function () {
+  'use strict';
+
+  var MIN_BPM = 20;
+  var MAX_BPM = 240;
+  var TAP_RESET_MS = 2000; // a pause longer than this starts a fresh tap sequence
+
+  /* Clamp any value into the supported tempo range; non-numbers become the default 100. */
+  function clampBpm(value) {
+    var n = Number(value);
+    if (!isFinite(n)) return 100;
+    n = Math.round(n);
+    if (n < MIN_BPM) return MIN_BPM;
+    if (n > MAX_BPM) return MAX_BPM;
+    return n;
+  }
+
+  /* Milliseconds between beats at a given tempo. */
+  function bpmToIntervalMs(bpm) {
+    var b = clampBpm(bpm);
+    return 60000 / b;
+  }
+
+  /* Beats per second (Hz) — handy for animation timing. */
+  function bpmToHz(bpm) {
+    var b = clampBpm(bpm);
+    return b / 60;
+  }
+
+  /* Classical Italian tempo marking for a tempo. */
+  function tempoName(bpm) {
+    var b = clampBpm(bpm);
+    if (b < 40) return 'Grave';
+    if (b < 50) return 'Largo';
+    if (b < 66) return 'Adagio';
+    if (b < 76) return 'Andante';
+    if (b < 108) return 'Moderato';
+    if (b < 120) return 'Allegretto';
+    if (b < 156) return 'Allegro';
+    if (b < 176) return 'Vivace';
+    return 'Presto';
+  }
+
+  /* A plain-language feel label for the tempo. */
+  function tempoFeel(bpm) {
+    var b = clampBpm(bpm);
+    if (b < 60) return 'Slow and spacious — great for careful technique work.';
+    if (b < 90) return 'Walking pace — relaxed, steady practice.';
+    if (b < 120) return 'Moderate groove — the heart of most pop and folk songs.';
+    if (b < 160) return 'Bright and driving — rock, dance and upbeat repertoire.';
+    return 'Very fast — virtuoso territory; build up to it gradually.';
+  }
+
+  /*
+   * Tap tempo: given an array of tap timestamps (ms, ascending), estimate BPM.
+   * Taps older than TAP_RESET_MS before the latest tap are ignored, mirroring
+   * how real tap-tempo buttons reset after a pause. Returns null when there
+   * are not enough usable taps.
+   */
+  function tapTempoBpm(taps) {
+    if (!Array.isArray(taps) || taps.length < 2) return null;
+    var sorted = taps.slice().sort(function (a, b) { return a - b; });
+    var latest = sorted[sorted.length - 1];
+    var usable = sorted.filter(function (t) { return latest - t <= TAP_RESET_MS * 4; });
+    // Keep only the trailing run of taps with no gap over TAP_RESET_MS.
+    var run = [usable[usable.length - 1]];
+    for (var i = usable.length - 2; i >= 0; i--) {
+      if (run[0] - usable[i] > TAP_RESET_MS) break;
+      run.unshift(usable[i]);
+    }
+    if (run.length < 2) return null;
+    var span = run[run.length - 1] - run[0];
+    if (span <= 0) return null;
+    var intervals = run.length - 1;
+    var bpm = 60000 / (span / intervals);
+    return clampBpm(Math.round(bpm));
+  }
+
+  /*
+   * Time signatures. beatsPerBar = accented cycle length, beatUnit = the note
+   * value that gets one beat. 6/8, 9/8 and 12/8 are compound: the beat is the
+   * dotted quarter, so the cycle has beatsPerBar/3 main beats.
+   */
+  var TIME_SIGNATURES = {
+    '2/4': { beatsPerBar: 2, beatUnit: 4, compound: false, label: '2/4 — Simple duple' },
+    '3/4': { beatsPerBar: 3, beatUnit: 4, compound: false, label: '3/4 — Waltz time' },
+    '4/4': { beatsPerBar: 4, beatUnit: 4, compound: false, label: '4/4 — Common time' },
+    '5/4': { beatsPerBar: 5, beatUnit: 4, compound: false, label: '5/4 — Quintuple' },
+    '6/8': { beatsPerBar: 2, beatUnit: 8, compound: true, label: '6/8 — Compound duple' },
+    '7/8': { beatsPerBar: 7, beatUnit: 8, compound: false, label: '7/8 — Asymmetric' },
+    '9/8': { beatsPerBar: 3, beatUnit: 8, compound: true, label: '9/8 — Compound triple' },
+    '12/8': { beatsPerBar: 4, beatUnit: 8, compound: true, label: '12/8 — Compound quadruple' }
+  };
+
+  function getTimeSignature(key) {
+    return TIME_SIGNATURES[key] || TIME_SIGNATURES['4/4'];
+  }
+
+  /* Is this beat index (0-based, counting main beats) the accented downbeat? */
+  function isAccent(beatIndex, beatsPerBar) {
+    if (!beatsPerBar || beatsPerBar < 1) return beatIndex === 0;
+    return ((beatIndex % beatsPerBar) + beatsPerBar) % beatsPerBar === 0;
+  }
+
+  /* Which beat within the bar (1-based) is this absolute beat index? */
+  function beatInBar(beatIndex, beatsPerBar) {
+    if (!beatsPerBar || beatsPerBar < 1) return 1;
+    return (((beatIndex % beatsPerBar) + beatsPerBar) % beatsPerBar) + 1;
+  }
+
+  /* 1-based bar number for an absolute beat index. */
+  function barNumber(beatIndex, beatsPerBar) {
+    if (!beatsPerBar || beatsPerBar < 1) return 1;
+    return Math.floor(beatIndex / beatsPerBar) + 1;
+  }
+
+  /*
+   * Subdivisions: how many clicks fall inside one beat.
+   * 'quarter' = 1 (the beat itself), 'eighth' = 2, 'triplet' = 3, 'sixteenth' = 4.
+   */
+  var SUBDIVISIONS = {
+    quarter: { count: 1, label: 'Quarter notes (no subdivision)' },
+    eighth: { count: 2, label: 'Eighth notes (2 per beat)' },
+    triplet: { count: 3, label: 'Triplets (3 per beat)' },
+    sixteenth: { count: 4, label: 'Sixteenth notes (4 per beat)' }
+  };
+
+  function getSubdivision(key) {
+    return SUBDIVISIONS[key] || SUBDIVISIONS.quarter;
+  }
+
+  /* Offset in ms of subdivision step k (0-based) inside one beat at bpm. */
+  function subdivisionOffsetMs(bpm, subdivisionKey, stepIndex) {
+    var sub = getSubdivision(subdivisionKey);
+    var interval = bpmToIntervalMs(bpm);
+    var k = Math.max(0, Math.min(sub.count - 1, stepIndex | 0));
+    return (interval / sub.count) * k;
+  }
+
+  /* Frequency (Hz) for a click: accented downbeats are higher and brighter. */
+  function clickFrequency(isDownbeat, isSubdivision) {
+    if (isDownbeat) return 1568; // G6 — clear, projecting accent
+    if (isSubdivision) return 784; // G5 — softer subdivision tick
+    return 1046; // C6 — regular beat
+  }
+
+  /* How many total beats elapse in a given practice duration (minutes). */
+  function beatsInDuration(bpm, minutes) {
+    var b = clampBpm(bpm);
+    var m = Number(minutes);
+    if (!isFinite(m) || m < 0) return 0;
+    return Math.round(b * m);
+  }
+
+  /* Format a beat count / bar readout, e.g. "Bar 12 · Beat 3 of 4". */
+  function formatPosition(beatIndex, beatsPerBar) {
+    return 'Bar ' + barNumber(beatIndex, beatsPerBar) + ' · Beat ' + beatInBar(beatIndex, beatsPerBar) + ' of ' + beatsPerBar;
+  }
+
+  return {
+    MIN_BPM: MIN_BPM,
+    MAX_BPM: MAX_BPM,
+    TAP_RESET_MS: TAP_RESET_MS,
+    TIME_SIGNATURES: TIME_SIGNATURES,
+    SUBDIVISIONS: SUBDIVISIONS,
+    clampBpm: clampBpm,
+    bpmToIntervalMs: bpmToIntervalMs,
+    bpmToHz: bpmToHz,
+    tempoName: tempoName,
+    tempoFeel: tempoFeel,
+    tapTempoBpm: tapTempoBpm,
+    getTimeSignature: getTimeSignature,
+    isAccent: isAccent,
+    beatInBar: beatInBar,
+    barNumber: barNumber,
+    getSubdivision: getSubdivision,
+    subdivisionOffsetMs: subdivisionOffsetMs,
+    clickFrequency: clickFrequency,
+    beatsInDuration: beatsInDuration,
+    formatPosition: formatPosition
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = TempoTapLib;
+}
+
+</script>
+</head>
+<body id="top" class="min-h-screen antialiased">
+
+<!-- ===== Header ===== -->
+<header class="sticky top-0 z-40 backdrop-blur-md" style="background:rgba(24,14,7,.88);border-bottom:1px solid #4a2f1a">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2.5">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-full" style="background:linear-gradient(150deg,#e8bc5e,#9a7126);box-shadow:0 2px 8px rgba(0,0,0,.5)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14.5 3 L19 21 L16.6 21 L12.6 5.4 Z" fill="#2a1a08"/><circle cx="17.6" cy="19.6" r="2.1" fill="#2a1a08"/><path d="M5 21 h9" stroke="#2a1a08" stroke-width="2" stroke-linecap="round"/></svg>
+      </span>
+      <span class="font-display font-black text-xl tracking-tight">Tempo<span class="brass-text">Tap</span></span>
+    </a>
+    <nav class="flex items-center gap-1 sm:gap-2 text-sm font-medium">
+      <a href="#top" class="px-3 py-2 rounded-lg hover:text-amber-200" style="color:#e6d7ba">Home</a>
+      <a href="https://fixoraa.tech" class="px-3 py-2 rounded-lg border" style="border-color:#55371d;color:#f0cd7d">More Tools</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ===== TOP AD ===== -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="mx-auto max-w-6xl px-4 sm:px-6 pb-10">
+
+  <!-- ===== Hero line ===== -->
+  <section class="text-center pt-8 pb-6">
+    <span class="inline-block text-[11px] font-semibold tracking-[0.22em] uppercase px-3 py-1.5 rounded-full border" style="border-color:#c9973f;color:#f0cd7d;background:rgba(201,151,63,.08)">&#10003; Unlimited Free Usage &middot; No signup</span>
+    <h1 class="font-display font-black text-4xl sm:text-5xl mt-4 leading-tight">The metronome that sits<br class="hidden sm:block"> on your <span class="brass-text">music stand</span></h1>
+    <p class="mt-3 max-w-2xl mx-auto text-sm sm:text-base" style="color:#d8c49c">Tap the tempo in your head, pick a time signature, add subdivisions — and practise to a rock-steady Web Audio click with a glowing pulse ring.</p>
+  </section>
+
+  <!-- ===== THE MUSIC STAND ===== -->
+  <section aria-label="Metronome" class="relative mx-auto max-w-3xl">
+    <!-- stand neck -->
+    <div class="mx-auto w-3 h-8" style="background:linear-gradient(180deg,#55371d,#2c1a0d)"></div>
+
+    <div class="stand-panel relative rounded-2xl sm:rounded-3xl px-4 sm:px-8 pt-6 pb-8" style="transform:perspective(1200px) rotateX(2deg)">
+      <div class="screw absolute top-3 left-3"></div>
+      <div class="screw absolute top-3 right-3"></div>
+      <div class="screw absolute bottom-3 left-3"></div>
+      <div class="screw absolute bottom-3 right-3"></div>
+
+      <!-- tempo readout -->
+      <div class="flex flex-col items-center">
+        <div class="relative w-[240px] h-[240px] sm:w-[280px] sm:h-[280px]">
+          <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="100" cy="100" r="88" fill="none" stroke="#17100a" stroke-width="6"/>
+            <circle id="ringBase" cx="100" cy="100" r="88" fill="none" stroke="#6e4c1e" stroke-width="3" opacity=".5"/>
+            <circle id="pulseRing" class="pulse-ring" cx="100" cy="100" r="88" fill="none" stroke="#e8bc5e" stroke-width="3" opacity=".25"/>
+            <circle id="ringProgress" cx="100" cy="100" r="88" fill="none" stroke="#c9973f" stroke-width="5" stroke-linecap="round" stroke-dasharray="552.9" stroke-dashoffset="552.9"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <div id="orb" class="orb plain absolute w-24 h-24 sm:w-28 sm:h-28 rounded-full" style="opacity:.16"></div>
+            <div class="relative text-center">
+              <div class="flex items-start justify-center gap-1">
+                <button id="bpmMinus" type="button" aria-label="Decrease tempo" class="chip mt-4 w-9 h-9 rounded-full border text-lg leading-none" style="border-color:#55371d;color:#e6d7ba">−</button>
+                <span id="bpmDisplay" class="bpm-big font-display font-black leading-none" style="font-size:5.6rem;color:#f7ecd2">100</span>
+                <button id="bpmPlus" type="button" aria-label="Increase tempo" class="chip mt-4 w-9 h-9 rounded-full border text-lg leading-none" style="border-color:#55371d;color:#e6d7ba">+</button>
+              </div>
+              <div class="text-[11px] font-semibold tracking-[0.3em] uppercase" style="color:#c9973f">Beats per minute</div>
+              <div class="mt-1.5 font-display italic text-lg" style="color:#f0cd7d"><span id="tempoName">Moderato</span></div>
+              <div id="tempoFeel" class="text-xs max-w-[240px] mx-auto mt-0.5" style="color:#c9b184">Moderate groove — the heart of most pop and folk songs.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- beat dots + position -->
+        <div class="mt-2 flex flex-col items-center gap-2">
+          <div id="beatDots" class="flex items-center gap-2.5" aria-hidden="true"></div>
+          <div id="positionLabel" class="text-xs font-medium tracking-wide" style="color:#c9b184">Bar 1 · Beat 1 of 4 — press play when ready</div>
+          <div class="flex gap-4 text-[11px]" style="color:#a68d5f">
+            <span>Beats played: <strong id="beatCount" style="color:#e6d7ba">0</strong></span>
+            <span>Elapsed: <strong id="elapsed" style="color:#e6d7ba">0:00</strong></span>
+          </div>
+        </div>
+
+        <!-- slider -->
+        <div class="w-full max-w-md mt-5">
+          <input id="bpmSlider" type="range" min="20" max="240" value="100" step="1" class="w-full" aria-label="Tempo in beats per minute">
+          <div class="flex justify-between text-[10px] mt-1" style="color:#a68d5f"><span>20 · Grave</span><span>60</span><span>120</span><span>180</span><span>240 · Presto</span></div>
+        </div>
+        <div class="flex items-center gap-2 mt-3">
+          <label for="bpmInput" class="text-xs" style="color:#c9b184">Exact tempo</label>
+          <input id="bpmInput" type="number" min="20" max="240" value="100" class="w-20 text-center rounded-lg px-2 py-1.5 text-sm font-semibold" style="background:#17100a;border:1px solid #55371d;color:#f4e9d4">
+          <span class="text-xs" style="color:#a68d5f">BPM (20–240)</span>
+        </div>
+
+        <!-- play + tap -->
+        <div class="flex flex-wrap items-center justify-center gap-3 mt-6">
+          <button id="playBtn" type="button" class="play-btn font-display font-bold text-lg px-8 py-3.5 rounded-full border" style="background:linear-gradient(160deg,#e8bc5e,#b3812c);border-color:#e8bc5e;color:#2a1a08;box-shadow:0 10px 24px rgba(0,0,0,.5)">
+            <span id="playLabel">&#9654; Start</span>
+          </button>
+          <button id="tapBtn" type="button" class="tap-btn font-display font-bold text-lg px-8 py-3.5 rounded-full border" style="background:#17100a;border-color:#c9973f;color:#f0cd7d" title="Tap at least twice in time with the music">
+            &#9835; Tap Tempo
+          </button>
+        </div>
+        <p id="tapHint" class="text-xs mt-2 h-4" style="color:#a68d5f">Tap the button (or press T) in time — TempoTap works out the BPM.</p>
+      </div>
+    </div>
+
+    <!-- stand lip / ledge holding the controls -->
+    <div class="stand-lip relative z-10 mx-auto max-w-3xl rounded-b-2xl sm:rounded-b-3xl rounded-t-md px-4 sm:px-6 py-2 text-center text-[11px] font-semibold tracking-[0.22em] uppercase" style="color:#2a1a08;margin-top:-6px">TempoTap Practice Desk</div>
+    <!-- stand legs -->
+    <div class="flex justify-center gap-40 sm:gap-64 -mt-1" aria-hidden="true">
+      <div class="w-2 h-10 rounded-b" style="background:linear-gradient(200deg,#3a2513,#170d05);transform:rotate(9deg)"></div>
+      <div class="w-2 h-10 rounded-b" style="background:linear-gradient(160deg,#3a2513,#170d05);transform:rotate(-9deg)"></div>
+    </div>
+  </section>
+
+  <!-- ===== Controls ===== -->
+  <section class="mx-auto max-w-3xl mt-8 grid gap-5">
+    <div class="rounded-2xl p-5" style="background:#251709;background:linear-gradient(165deg,#2c1c0e,#211307);border:1px solid #4a2f1a">
+      <h2 class="font-display font-bold text-lg" style="color:#f0cd7d">Time signature</h2>
+      <p class="text-xs mb-3" style="color:#a68d5f">The first beat of every bar gets a brighter, higher accent click (toggle it below).</p>
+      <div id="sigGrid" class="grid grid-cols-4 gap-2">
+        <button type="button" data-sig="2/4" class="sig-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-base">2/4</span><span class="sig-sub block text-[10px]" style="color:#a68d5f">Duple</span></button>
+        <button type="button" data-sig="3/4" class="sig-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-base">3/4</span><span class="sig-sub block text-[10px]" style="color:#a68d5f">Waltz</span></button>
+        <button type="button" data-sig="4/4" class="sig-btn chip sel rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-base">4/4</span><span class="sig-sub block text-[10px]" style="color:#a68d5f">Common</span></button>
+        <button type="button" data-sig="5/4" class="sig-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-base">5/4</span><span class="sig-sub block text-[10px]" style="color:#a68d5f">Quintuple</span></button>
+        <button type="button" data-sig="6/8" class="sig-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-base">6/8</span><span class="sig-sub block text-[10px]" style="color:#a68d5f">Compound</span></button>
+        <button type="button" data-sig="7/8" class="sig-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-base">7/8</span><span class="sig-sub block text-[10px]" style="color:#a68d5f">Asymmetric</span></button>
+        <button type="button" data-sig="9/8" class="sig-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-base">9/8</span><span class="sig-sub block text-[10px]" style="color:#a68d5f">Compound</span></button>
+        <button type="button" data-sig="12/8" class="sig-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-base">12/8</span><span class="sig-sub block text-[10px]" style="color:#a68d5f">Blues feel</span></button>
+      </div>
+      <p id="sigLabel" class="text-xs mt-3" style="color:#c9b184">4/4 — Common time</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-5">
+      <div class="rounded-2xl p-5" style="background:linear-gradient(165deg,#2c1c0e,#211307);border:1px solid #4a2f1a">
+        <h2 class="font-display font-bold text-lg" style="color:#f0cd7d">Subdivisions</h2>
+        <p class="text-xs mb-3" style="color:#a68d5f">Split every beat into smaller ticks to lock in fast passages.</p>
+        <div class="grid grid-cols-2 gap-2" id="subGrid">
+          <button type="button" data-sub="quarter" class="sub-btn chip sel rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-sm">Quarter</span><span class="sub-sub block text-[10px]" style="color:#a68d5f">1 per beat</span></button>
+          <button type="button" data-sub="eighth" class="sub-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-sm">Eighths</span><span class="sub-sub block text-[10px]" style="color:#a68d5f">2 per beat</span></button>
+          <button type="button" data-sub="triplet" class="sub-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-sm">Triplets</span><span class="sub-sub block text-[10px]" style="color:#a68d5f">3 per beat</span></button>
+          <button type="button" data-sub="sixteenth" class="sub-btn chip rounded-xl border px-2 py-2.5 text-center" style="border-color:#55371d"><span class="block font-display font-bold text-sm">Sixteenths</span><span class="sub-sub block text-[10px]" style="color:#a68d5f">4 per beat</span></button>
+        </div>
+      </div>
+
+      <div class="rounded-2xl p-5" style="background:linear-gradient(165deg,#2c1c0e,#211307);border:1px solid #4a2f1a">
+        <h2 class="font-display font-bold text-lg" style="color:#f0cd7d">Sound &amp; practice</h2>
+        <div class="flex items-center justify-between py-2">
+          <label for="accentToggle" class="text-sm">Accent the downbeat</label>
+          <input id="accentToggle" type="checkbox" checked class="w-5 h-5 accent-amber-500">
+        </div>
+        <div class="flex items-center justify-between py-2">
+          <label for="flashToggle" class="text-sm">Pulse ring flash</label>
+          <input id="flashToggle" type="checkbox" checked class="w-5 h-5 accent-amber-500">
+        </div>
+        <div class="py-2">
+          <label for="volume" class="text-sm flex justify-between"><span>Click volume</span><span id="volLabel" style="color:#a68d5f">80%</span></label>
+          <input id="volume" type="range" min="0" max="100" value="80" class="w-full mt-2">
+        </div>
+        <div class="flex items-center gap-2 pt-2">
+          <label for="bpmStep" class="text-sm">Speed-up trainer: add</label>
+          <input id="bpmStep" type="number" min="0" max="20" value="0" class="w-16 text-center rounded-lg px-2 py-1.5 text-sm font-semibold" style="background:#17100a;border:1px solid #55371d;color:#f4e9d4">
+          <span class="text-sm">BPM every</span>
+          <input id="barsStep" type="number" min="1" max="64" value="4" class="w-16 text-center rounded-lg px-2 py-1.5 text-sm font-semibold" style="background:#17100a;border:1px solid #55371d;color:#f4e9d4">
+          <span class="text-sm">bars</span>
+        </div>
+        <p class="text-[11px] mt-1" style="color:#a68d5f">Set the step to 0 to keep a fixed tempo. The trainer stops at 240 BPM.</p>
+      </div>
+    </div>
+
+    <div class="rounded-2xl p-5" style="background:linear-gradient(165deg,#2c1c0e,#211307);border:1px solid #4a2f1a">
+      <h2 class="font-display font-bold text-lg mb-3" style="color:#f0cd7d">Tempo presets</h2>
+      <div class="flex flex-wrap gap-2" id="presetRow">
+        <button type="button" data-bpm="40" class="chip rounded-full border px-4 py-1.5 text-sm" style="border-color:#55371d">40 · Largo</button>
+        <button type="button" data-bpm="60" class="chip rounded-full border px-4 py-1.5 text-sm" style="border-color:#55371d">60 · Heartbeat</button>
+        <button type="button" data-bpm="72" class="chip rounded-full border px-4 py-1.5 text-sm" style="border-color:#55371d">72 · Andante</button>
+        <button type="button" data-bpm="90" class="chip rounded-full border px-4 py-1.5 text-sm" style="border-color:#55371d">90 · Waltz practice</button>
+        <button type="button" data-bpm="100" class="chip rounded-full border px-4 py-1.5 text-sm" style="border-color:#55371d">100 · Moderato</button>
+        <button type="button" data-bpm="120" class="chip rounded-full border px-4 py-1.5 text-sm" style="border-color:#55371d">120 · March / pop</button>
+        <button type="button" data-bpm="140" class="chip rounded-full border px-4 py-1.5 text-sm" style="border-color:#55371d">140 · Allegro</button>
+        <button type="button" data-bpm="160" class="chip rounded-full border px-4 py-1.5 text-sm" style="border-color:#55371d">160 · Drum &amp; bass</button>
+        <button type="button" data-bpm="180" class="chip rounded-full border px-4 py-1.5 text-sm" style="border-color:#55371d">180 · Vivace</button>
+      </div>
+      <p class="text-xs mt-4" style="color:#a68d5f">Keyboard: <strong style="color:#e6d7ba">Space</strong> start/stop &middot; <strong style="color:#e6d7ba">T</strong> tap tempo &middot; <strong style="color:#e6d7ba">&uarr;/&darr;</strong> tempo &plusmn;1 &middot; <strong style="color:#e6d7ba">Shift + &uarr;/&darr;</strong> &plusmn;5</p>
+    </div>
+  </section>
+</main>
+
+<!-- ===== BOTTOM AD ===== -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script async src="https://js.wpadmngr.com/static/adManager.js" data-admpid="464498"></script>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEO ARTICLE + FAQ ===== -->
+<section class="mx-auto max-w-4xl px-4 sm:px-6 pb-14">
+  <article class="article-body rounded-3xl p-6 sm:p-10" style="background:linear-gradient(170deg,#2a1a0e,#201206);border:1px solid #4a2f1a">
+    <h2 style="margin-top:0">What Is a Metronome — and Why Every Musician Needs One</h2>
+    <p>A metronome is a practice tool that produces a steady, repeating click at a speed you choose, measured in <strong>beats per minute (BPM)</strong>. When you set a metronome to 60 BPM, it clicks exactly once per second; at 120 BPM it clicks twice per second. That unchanging pulse becomes your external sense of time, so the tempo of the music no longer depends on your mood, your nerves, or how exciting the loud passages feel. <strong>TempoTap</strong> is a free online metronome that lives in your browser: it runs from 20 to 240 BPM, includes tap tempo, eight time signatures with an accented downbeat, beat subdivisions, and a visual pulse ring you can follow even with the sound down.</p>
+    <p>Musicians have used metronomes for over two hundred years. The wind-up mechanical metronome — the wooden pyramid with a swinging pendulum that still sits on countless pianos — was patented in the early nineteenth century and quickly became standard studio equipment. Electronic metronomes replaced the pendulum with a quartz-accurate click in the twentieth century, and today a browser metronome like TempoTap gives you the same rock-steady pulse on any phone, tablet, or computer, with none of the winding, batteries, or drift. Teachers recommend one for a simple reason: human beings are wonderful at expression and terrible at keeping an absolutely even beat. We rush the parts we find exciting and drag the parts we find difficult, usually without noticing. A metronome notices.</p>
+
+    <h2>How to Use TempoTap</h2>
+    <p>Using TempoTap takes about ten seconds. Press the big brass <strong>Start</strong> button (or hit the spacebar) and the click begins immediately, generated live by the Web Audio API in your browser, which means the timing is sample-accurate and does not depend on your internet connection once the page has loaded. Set your tempo three ways: drag the slider, type an exact number into the tempo box, or use the plus and minus buttons for one-beat steps. The Italian tempo marking — Largo, Andante, Moderato, Allegro and so on — updates as you move, so you can connect the words printed in your sheet music to an actual speed.</p>
+    <p>If you already have a tempo in your head — a song you heard, a recording your teacher assigned, the speed your band wants to rehearse at — use <strong>Tap Tempo</strong>. Click the Tap Tempo button, or press the letter T, in time with the beat you are imagining. After two taps TempoTap estimates your tempo; after four or five taps the estimate settles to within a beat or two per minute. Pausing for more than a couple of seconds resets the tap sequence, so you can start a fresh measurement whenever you like. Tap tempo is also the fastest way to identify the BPM of a recording: play the track, tap along, and read the number.</p>
+    <p>Next, choose your <strong>time signature</strong>. TempoTap offers 2/4, 3/4, 4/4, 5/4, 6/8, 7/8, 9/8 and 12/8. In the simple signatures the click counts every beat and the first beat of each bar — the downbeat — sounds higher and brighter when the accent toggle is on, so you always know where "one" is. In the compound signatures (6/8, 9/8 and 12/8) the main beats are dotted-quarter pulses, which is how conductors actually beat those metres: 6/8 is felt in two, 9/8 in three, and 12/8 in four. The row of beat dots under the tempo display lights up in time, and the position label tells you the current bar and beat, which is invaluable when you are counting long rests or practising entries.</p>
+    <p>Finally, pick a <strong>subdivision</strong> if the passage demands it. Quarter notes give you one click per beat. Eighth notes split each beat in two, triplets split it in three, and sixteenth notes split it in four, each with a softer tick so the main beats still stand out. Subdivisions are the secret weapon for fast, even playing: fingers rush and stumble in the gaps between beats, and filling those gaps with quieter clicks removes the guesswork entirely.</p>
+
+    <h2>Understanding Tempo Markings</h2>
+    <p>Composers traditionally describe tempo with Italian words rather than numbers, and every musician eventually needs to translate those words into a pulse. The markings TempoTap displays follow the ranges most teachers use. <strong>Grave</strong> (below 40 BPM) is solemn and very slow. <strong>Largo</strong> (40–50) is broad and stately. <strong>Adagio</strong> (50–66) means "at ease" — slow, but flowing. <strong>Andante</strong> (66–76) is a walking pace. <strong>Moderato</strong> (76–108) is a moderate, everyday tempo, and <strong>Allegretto</strong> (108–120) is its slightly brighter cousin. <strong>Allegro</strong> (120–156) is fast and lively — the default for symphonic movements — while <strong>Vivace</strong> (156–176) adds brilliance and <strong>Presto</strong> (176 and above) is as fast as most music ever asks for. When a score says "Allegro" and your exam syllabus expects a specific speed, set TempoTap near the middle of the range and adjust to the recording or your teacher's instruction.</p>
+    <p>BPM also maps neatly onto the music you already know. A resting heartbeat sits near 60 BPM. Most pop songs live between 90 and 130 BPM. A brisk march is traditionally 120 BPM — exactly two steps per second — and dance music climbs from there, with drum and bass often at 160–180 BPM. Knowing these landmarks helps you choose sensible practice tempos and makes tap tempo feel natural: you are matching numbers to pulses your body already understands.</p>
+
+    <h2>Time Signatures, Explained Simply</h2>
+    <p>A time signature tells you how beats group into bars. The top number counts the beats; the bottom number names the note value that receives one beat. In 4/4 there are four quarter-note beats per bar — the "common time" of most popular music. In 3/4 there are three, giving the one-two-three sway of a waltz. 2/4 suits marches and polkas, while 5/4 groups beats asymmetrically (usually three plus two), famous from jazz pieces like "Take Five".</p>
+    <p>Signatures with an 8 on the bottom work differently. In 6/8, six eighth notes fill the bar, but they group into two threes, so the music swings in two big beats — think of a gentle rocking or a jig. 9/8 groups into three big beats and 12/8 into four, which is why 12/8 underpins so much blues, gospel and slow rock: it lets triplets breathe inside a four-beat frame. 7/8 is genuinely asymmetric — seven eighth notes grouped as two plus two plus three, or similar — and appears in progressive rock and Balkan folk music. On TempoTap, the accented downbeat and the beat-dot display make these groupings audible and visible, so an unfamiliar metre becomes something you can feel within a few bars instead of something you merely count.</p>
+
+    <h2>Why Subdivisions Make You Faster (and More Accurate)</h2>
+    <p>Ask a teacher why a student's fast passage sounds uneven and the answer is usually the same: the student is only listening to the main beats. Between two clicks a full beat apart, there is plenty of room for three notes to bunch up and the fourth to arrive late. Subdividing the beat shrinks those gaps. Practising a semiquaver passage with sixteenth-note subdivisions at a slow tempo forces every note onto its own click; there is nowhere for sloppy timing to hide. Triplet subdivisions do the same for swing rhythms, Irish reels and any music where three notes share one beat.</p>
+    <p>A good routine is to start with subdivisions on and the tempo low, then remove them as the passage stabilises: play with sixteenth ticks at 60 BPM, then eighth ticks at 80, then plain quarter clicks at 100. Your fingers keep the internal grid they learned from the finer clicks. TempoTap makes this progression painless because the subdivision switch is instant — no stopping to re-program a hardware device.</p>
+
+    <h2>The Speed-Up Trainer: Practising Slow to Play Fast</h2>
+    <p>Every instrumental teacher repeats the same mantra: <strong>if you can play it slowly, you can learn to play it fast — but the reverse is not true.</strong> TempoTap's speed-up trainer automates the classic method. Enter a step (say 2 BPM) and a bar interval (say every 4 bars) in the Sound &amp; Practice panel, start the metronome at a tempo where the passage is flawless, and the tempo quietly climbs each time the interval completes, up to the 240 BPM ceiling. Small steps matter: jumps of 2–4 BPM are almost unnoticeable to your fingers, yet ten steps take you from a comfortable 80 to a performance-ready 120 in a single focused session. If mistakes creep in, drop back ten beats per minute and rebuild — the trainer rewards patience, not heroics.</p>
+    <ul>
+      <li><strong>Start slower than feels necessary.</strong> If the piece should end at 120, begin near 60–70 with subdivisions on.</li>
+      <li><strong>Loop small sections.</strong> Two to four bars at a time, repeated, beats one heroic run-through of the whole piece.</li>
+      <li><strong>Keep steps tiny.</strong> 2 BPM every 4 bars is a proven recipe; big jumps teach tension, not speed.</li>
+      <li><strong>Stop on accuracy, not exhaustion.</strong> Three clean repetitions at a new tempo earn the next step up.</li>
+      <li><strong>Record yourself weekly.</strong> Your ears adapt gradually; a recording shows progress your practice brain misses.</li>
+    </ul>
+
+    <h2>More Ways Musicians Use a Metronome</h2>
+    <h3>Exam and audition preparation</h3>
+    <p>Graded music exams publish target tempos for scales and pieces. Set TempoTap to the syllabus tempo during the final weeks of preparation so there are no surprises on the day: playing a piece at exactly the marked speed, neither dragging from nerves nor rushing from adrenaline, is a skill in itself, and only a metronome can teach it honestly.</p>
+    <h3>Band and ensemble rehearsal</h3>
+    <p>Drummers increasingly play to a click track, and the whole band benefits when rehearsals start from an agreed tempo. Use tap tempo on the reference recording, write the number on the set list, and start TempoTap at that tempo until the count-in feels automatic. The visual pulse ring also helps in loud rooms: place a phone where everyone can see it and the flash keeps the tempo visible when the click is hard to hear.</p>
+    <h3>Beyond music</h3>
+    <p>The same steady pulse serves dancers counting phrases, athletes pacing cadence drills, public speakers rehearsing delivery speed, and students using timed focus sessions where a quiet visual pulse marks the rhythm of work. TempoTap's silent-friendly design — a large ring, clear beat dots, and optional clicks — suits all of these. Whatever you are timing, the principle is the same: an external, unwavering reference turns vague intentions about pace into a measurable, improvable skill.</p>
+    <p>Ready when you are: scroll up, set your tempo, and press Start. Your first perfectly-in-time practice session is about ten seconds away.</p>
+  </article>
+
+  <h2 class="font-display font-bold text-2xl mt-10 mb-4" style="color:#f0cd7d">Frequently asked questions</h2>
+  <div class="space-y-3">
+    <details class="faq rounded-2xl p-5">
+      <summary class="font-semibold flex items-center justify-between gap-3">Is TempoTap really free to use? <span class="chev text-xl leading-none" style="color:#c9973f">+</span></summary>
+      <p class="text-sm mt-3 leading-relaxed" style="color:#d8c49c">Yes. TempoTap is completely free with unlimited usage — no signup, no paywall and no watermark. Every feature, including tap tempo, subdivisions and the speed-up trainer, works for as long and as often as you like.</p>
+    </details>
+    <details class="faq rounded-2xl p-5">
+      <summary class="font-semibold flex items-center justify-between gap-3">How does tap tempo work? <span class="chev text-xl leading-none" style="color:#c9973f">+</span></summary>
+      <p class="text-sm mt-3 leading-relaxed" style="color:#d8c49c">Tap the Tap Tempo button (or press T) repeatedly in time with the beat you hear or imagine. TempoTap measures the gaps between your taps and converts the average gap into beats per minute. Two taps give a first estimate; four or five taps make it accurate. Pausing for more than about two seconds starts a fresh measurement.</p>
+    </details>
+    <details class="faq rounded-2xl p-5">
+      <summary class="font-semibold flex items-center justify-between gap-3">Which time signatures does TempoTap support? <span class="chev text-xl leading-none" style="color:#c9973f">+</span></summary>
+      <p class="text-sm mt-3 leading-relaxed" style="color:#d8c49c">TempoTap supports 2/4, 3/4, 4/4, 5/4, 6/8, 7/8, 9/8 and 12/8. The first beat of each bar is accented with a higher, brighter click (which you can switch off), and in compound signatures like 6/8 and 12/8 the main beats follow the dotted-quarter groupings conductors use.</p>
+    </details>
+    <details class="faq rounded-2xl p-5">
+      <summary class="font-semibold flex items-center justify-between gap-3">What are subdivisions, and when should I use them? <span class="chev text-xl leading-none" style="color:#c9973f">+</span></summary>
+      <p class="text-sm mt-3 leading-relaxed" style="color:#d8c49c">Subdivisions split each beat into smaller equal ticks: eighths (2 per beat), triplets (3 per beat) or sixteenths (4 per beat). Use them when fast passages sound uneven — the extra clicks expose exactly where notes bunch up or lag, and practising with them at a slow tempo builds clean, even speed.</p>
+    </details>
+    <details class="faq rounded-2xl p-5">
+      <summary class="font-semibold flex items-center justify-between gap-3">What is the speed-up trainer for? <span class="chev text-xl leading-none" style="color:#c9973f">+</span></summary>
+      <p class="text-sm mt-3 leading-relaxed" style="color:#d8c49c">The speed-up trainer raises the tempo automatically by a small step (for example 2 BPM) after a set number of bars. It automates the classic "practise slow, build fast" method: start where the passage is flawless and let the tempo climb in steps so small your fingers barely notice, up to a maximum of 240 BPM.</p>
+    </details>
+    <details class="faq rounded-2xl p-5">
+      <summary class="font-semibold flex items-center justify-between gap-3">Does TempoTap work on my phone, and does it need the internet? <span class="chev text-xl leading-none" style="color:#c9973f">+</span></summary>
+      <p class="text-sm mt-3 leading-relaxed" style="color:#d8c49c">TempoTap runs in any modern browser on phones, tablets and computers, and the layout adapts down to small screens. The click is generated on your device with the Web Audio API, so once the page has loaded the timing stays precise — nothing is streamed or sent to a server.</p>
+    </details>
+  </div>
+</section>
+
+<footer class="border-t" style="border-color:#4a2f1a;background:rgba(20,11,5,.7)">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs" style="color:#a68d5f">
+    <span class="font-display font-bold text-sm" style="color:#e6d7ba">TempoTap — practise in perfect time.</span>
+    <span>Free online metronome &middot; 20–240 BPM &middot; Tap tempo &middot; Subdivisions</span>
+  </div>
+<p class="fx-credit" style="text-align:center;font-size:12.5px;opacity:.62;margin:10px auto 2px;letter-spacing:.01em">Made by <a href="https://fixoraa.tech" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px">Fixoraa</a></p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  var L = TempoTapLib;
+  var $ = function (id) { return document.getElementById(id); };
+
+  var state = {
+    bpm: 100,
+    sigKey: '4/4',
+    subKey: 'quarter',
+    accent: true,
+    flash: true,
+    volume: 0.8,
+    playing: false,
+    beatIndex: 0,
+    startStamp: 0,
+    elapsedBefore: 0
+  };
+
+  var audioCtx = null, masterGain = null, timerID = null, rafID = null;
+  var nextNoteTime = 0, currentBeat = 0, visualQueue = [];
+  var LOOKAHEAD_MS = 25, SCHEDULE_AHEAD = 0.12;
+
+  var bpmDisplay = $('bpmDisplay'), slider = $('bpmSlider'), bpmInput = $('bpmInput');
+  var tempoNameEl = $('tempoName'), tempoFeelEl = $('tempoFeel');
+  var ringProgress = $('ringProgress'), pulseRing = $('pulseRing'), orb = $('orb');
+  var CIRC = 552.9;
+
+  function renderBeatDots() {
+    var sig = L.getTimeSignature(state.sigKey);
+    var wrap = $('beatDots'); wrap.innerHTML = '';
+    for (var i = 0; i < sig.beatsPerBar; i++) {
+      var d = document.createElement('span');
+      d.className = 'beat-dot w-3.5 h-3.5 rounded-full';
+      d.style.background = i === 0 ? '#7d5f2a' : '#4a3418';
+      d.style.border = '1px solid #6e4c1e';
+      d.id = 'dot-' + i;
+      wrap.appendChild(d);
+    }
+  }
+
+  function setBpm(v, fromTrainer) {
+    state.bpm = L.clampBpm(v);
+    bpmDisplay.textContent = state.bpm;
+    slider.value = state.bpm;
+    bpmInput.value = state.bpm;
+    slider.style.setProperty('--fill', ((state.bpm - 20) / 220 * 100) + '%');
+    tempoNameEl.textContent = L.tempoName(state.bpm);
+    tempoFeelEl.textContent = L.tempoFeel(state.bpm);
+    if (!state.playing) {
+      $('positionLabel').textContent = 'Bar 1 · Beat 1 of ' + L.getTimeSignature(state.sigKey).beatsPerBar + ' — ready at ' + state.bpm + ' BPM';
+    }
+  }
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = state.volume;
+      masterGain.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playClick(time, freq, dur, vol) {
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, time);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.001, vol), time + 0.002);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    osc.connect(gain); gain.connect(masterGain);
+    osc.start(time); osc.stop(time + dur + 0.02);
+  }
+
+  function scheduler() {
+    var sig = L.getTimeSignature(state.sigKey);
+    var sub = L.getSubdivision(state.subKey);
+    var beatDur = 60 / state.bpm;
+    while (nextNoteTime < audioCtx.currentTime + SCHEDULE_AHEAD) {
+      var isDown = state.accent && L.isAccent(currentBeat, sig.beatsPerBar);
+      playClick(nextNoteTime, L.clickFrequency(isDown, false), isDown ? 0.09 : 0.055, 1);
+      for (var s = 1; s < sub.count; s++) {
+        playClick(nextNoteTime + (beatDur / sub.count) * s, L.clickFrequency(false, true), 0.035, 0.55);
+      }
+      visualQueue.push({ time: nextNoteTime, beat: currentBeat, down: isDown });
+      // speed-up trainer check at bar boundaries
+      var step = parseInt($('bpmStep').value, 10) || 0;
+      var barsEvery = Math.max(1, parseInt($('barsStep').value, 10) || 4);
+      if (step > 0 && (currentBeat + 1) % (sig.beatsPerBar * barsEvery) === 0 && state.bpm < L.MAX_BPM) {
+        state.bpm = L.clampBpm(state.bpm + step);
+        bpmDisplay.textContent = state.bpm; slider.value = state.bpm; bpmInput.value = state.bpm;
+        slider.style.setProperty('--fill', ((state.bpm - 20) / 220 * 100) + '%');
+        tempoNameEl.textContent = L.tempoName(state.bpm);
+        tempoFeelEl.textContent = L.tempoFeel(state.bpm);
+      }
+      nextNoteTime += beatDur;
+      currentBeat++;
+    }
+  }
+
+  function drawLoop() {
+    if (!state.playing) return;
+    var now = audioCtx.currentTime;
+    var sig = L.getTimeSignature(state.sigKey);
+    while (visualQueue.length && visualQueue[0].time <= now) {
+      var ev = visualQueue.shift();
+      state.beatIndex = ev.beat;
+      var beatInBar = L.beatInBar(ev.beat, sig.beatsPerBar);
+      var dots = $('beatDots').children;
+      for (var i = 0; i < dots.length; i++) { dots[i].classList.remove('on', 'on-accent'); }
+      var dot = dots[beatInBar - 1];
+      if (dot) dot.classList.add(ev.down || beatInBar === 1 ? 'on-accent' : 'on');
+      if (state.flash) {
+        pulseRing.classList.remove('flash'); void pulseRing.getBBox; void pulseRing.offsetWidth;
+        pulseRing.classList.add('flash');
+      }
+      orb.classList.remove('hit', 'accent');
+      void orb.offsetWidth;
+      orb.classList.add('hit');
+      if (ev.down || beatInBar === 1) orb.classList.add('accent');
+      $('beatCount').textContent = ev.beat + 1;
+      $('positionLabel').textContent = L.formatPosition(ev.beat, sig.beatsPerBar) + ' · ' + state.bpm + ' BPM';
+    }
+    // progress ring: fraction through the current bar
+    if (visualQueue.length) {
+      var last = visualQueue[0];
+      var beatDur = 60 / state.bpm;
+      var frac = 1 - Math.max(0, (last.time - now)) / beatDur;
+      var inBar = L.beatInBar(state.beatIndex, sig.beatsPerBar);
+      var barFrac = ((inBar - 1) + Math.min(1, Math.max(0, frac))) / sig.beatsPerBar;
+      ringProgress.style.strokeDashoffset = (CIRC * (1 - barFrac)).toFixed(1);
+    }
+    var elapsedMs = state.elapsedBefore + (performance.now() - state.startStamp);
+    var sec = Math.floor(elapsedMs / 1000);
+    $('elapsed').textContent = Math.floor(sec / 60) + ':' + ('0' + (sec % 60)).slice(-2);
+    rafID = requestAnimationFrame(drawLoop);
+  }
+
+  function start() {
+    ensureAudio();
+    state.playing = true;
+    currentBeat = 0; state.beatIndex = 0; visualQueue = [];
+    state.startStamp = performance.now();
+    nextNoteTime = audioCtx.currentTime + 0.06;
+    timerID = setInterval(scheduler, LOOKAHEAD_MS);
+    scheduler();
+    rafID = requestAnimationFrame(drawLoop);
+    $('playLabel').innerHTML = '&#10073;&#10073; Stop';
+    $('playBtn').classList.add('playing');
+    $('positionLabel').textContent = 'Playing — ' + state.bpm + ' BPM';
+  }
+
+  function stop() {
+    state.playing = false;
+    state.elapsedBefore += performance.now() - state.startStamp;
+    clearInterval(timerID); cancelAnimationFrame(rafID);
+    $('playLabel').innerHTML = '&#9654; Start';
+    $('playBtn').classList.remove('playing');
+    var dots = $('beatDots').children;
+    for (var i = 0; i < dots.length; i++) dots[i].classList.remove('on', 'on-accent');
+    orb.classList.remove('hit', 'accent');
+    ringProgress.style.strokeDashoffset = CIRC;
+    $('positionLabel').textContent = 'Stopped — press play to resume counting from bar 1';
+  }
+
+  $('playBtn').addEventListener('click', function () { state.playing ? stop() : start(); });
+
+  // Tempo controls
+  slider.addEventListener('input', function () { setBpm(slider.value); });
+  bpmInput.addEventListener('change', function () {
+    var v = parseInt(bpmInput.value, 10);
+    if (isNaN(v)) { bpmInput.value = state.bpm; return; }
+    setBpm(v);
+  });
+  $('bpmMinus').addEventListener('click', function () { setBpm(state.bpm - 1); });
+  $('bpmPlus').addEventListener('click', function () { setBpm(state.bpm + 1); });
+
+  // Tap tempo
+  var taps = [];
+  function doTap() {
+    var now = performance.now();
+    if (taps.length && now - taps[taps.length - 1] > L.TAP_RESET_MS) taps = [];
+    taps.push(now);
+    if (taps.length > 12) taps.shift();
+    var est = L.tapTempoBpm(taps);
+    if (est) {
+      setBpm(est);
+      $('tapHint').textContent = 'Tap tempo: ' + est + ' BPM from ' + taps.length + ' taps — tap more to refine, pause to reset.';
+    } else {
+      $('tapHint').textContent = 'One more tap… keep them evenly spaced, like a heartbeat.';
+    }
+    var btn = $('tapBtn');
+    btn.style.transform = 'scale(.965)';
+    setTimeout(function () { btn.style.transform = ''; }, 90);
+  }
+  $('tapBtn').addEventListener('click', doTap);
+
+  // Time signature
+  $('sigGrid').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-sig]'); if (!btn) return;
+    state.sigKey = btn.getAttribute('data-sig');
+    var all = $('sigGrid').querySelectorAll('[data-sig]');
+    for (var i = 0; i < all.length; i++) all[i].classList.toggle('sel', all[i] === btn);
+    $('sigLabel').textContent = L.getTimeSignature(state.sigKey).label;
+    renderBeatDots();
+    if (!state.playing) setBpm(state.bpm);
+    if (state.playing) { stop(); start(); }
+  });
+
+  // Subdivisions
+  $('subGrid').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-sub]'); if (!btn) return;
+    state.subKey = btn.getAttribute('data-sub');
+    var all = $('subGrid').querySelectorAll('[data-sub]');
+    for (var i = 0; i < all.length; i++) all[i].classList.toggle('sel', all[i] === btn);
+    if (state.playing) { stop(); start(); }
+  });
+
+  // Toggles & volume
+  $('accentToggle').addEventListener('change', function () { state.accent = this.checked; if (state.playing) { stop(); start(); } });
+  $('flashToggle').addEventListener('change', function () { state.flash = this.checked; });
+  $('volume').addEventListener('input', function () {
+    state.volume = this.value / 100;
+    this.style.setProperty('--fill', this.value + '%');
+    $('volLabel').textContent = this.value + '%';
+    if (masterGain) masterGain.gain.value = state.volume;
+  });
+  $('volume').style.setProperty('--fill', '80%');
+
+  // Presets
+  $('presetRow').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-bpm]'); if (!btn) return;
+    setBpm(parseInt(btn.getAttribute('data-bpm'), 10));
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (e.code === 'Space') { e.preventDefault(); state.playing ? stop() : start(); }
+    else if (e.key === 't' || e.key === 'T') { doTap(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setBpm(state.bpm + (e.shiftKey ? 5 : 1)); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setBpm(state.bpm - (e.shiftKey ? 5 : 1)); }
+  });
+
+  renderBeatDots();
+  setBpm(100);
+})();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Is TempoTap really free to use?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. TempoTap is completely free with unlimited usage — no signup, no paywall and no watermark. Every feature, including tap tempo, subdivisions and the speed-up trainer, works for as long and as often as you like." } },
+    { "@type": "Question", "name": "How does tap tempo work?", "acceptedAnswer": { "@type": "Answer", "text": "Tap the Tap Tempo button (or press T) repeatedly in time with the beat you hear or imagine. TempoTap measures the gaps between your taps and converts the average gap into beats per minute. Two taps give a first estimate; four or five taps make it accurate. Pausing for more than about two seconds starts a fresh measurement." } },
+    { "@type": "Question", "name": "Which time signatures does TempoTap support?", "acceptedAnswer": { "@type": "Answer", "text": "TempoTap supports 2/4, 3/4, 4/4, 5/4, 6/8, 7/8, 9/8 and 12/8. The first beat of each bar is accented with a higher, brighter click (which you can switch off), and in compound signatures like 6/8 and 12/8 the main beats follow the dotted-quarter groupings conductors use." } },
+    { "@type": "Question", "name": "What are subdivisions, and when should I use them?", "acceptedAnswer": { "@type": "Answer", "text": "Subdivisions split each beat into smaller equal ticks: eighths (2 per beat), triplets (3 per beat) or sixteenths (4 per beat). Use them when fast passages sound uneven — the extra clicks expose exactly where notes bunch up or lag, and practising with them at a slow tempo builds clean, even speed." } },
+    { "@type": "Question", "name": "What is the speed-up trainer for?", "acceptedAnswer": { "@type": "Answer", "text": "The speed-up trainer raises the tempo automatically by a small step (for example 2 BPM) after a set number of bars. It automates the classic \"practise slow, build fast\" method: start where the passage is flawless and let the tempo climb in steps so small your fingers barely notice, up to a maximum of 240 BPM." } },
+    { "@type": "Question", "name": "Does TempoTap work on my phone, and does it need the internet?", "acceptedAnswer": { "@type": "Answer", "text": "TempoTap runs in any modern browser on phones, tablets and computers, and the layout adapts down to small screens. The click is generated on your device with the Web Audio API, so once the page has loaded the timing stays precise — nothing is streamed or sent to a server." } }
+  ]
+}
+</script>
+</body>
+</html>
